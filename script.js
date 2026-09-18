@@ -1,54 +1,43 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Mobile Menu Toggle
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    const mainNav = document.querySelector('.main-nav');
+    // 1. Mobile Navigation Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mainNav = document.getElementById('mainNav');
     const navLinks = document.querySelectorAll('.nav-links a');
 
-    mobileMenuBtn.addEventListener('click', () => {
-        mainNav.classList.toggle('active');
-        mobileMenuBtn.classList.toggle('active');
-    });
-
-    // Close mobile menu when a link is clicked
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            mainNav.classList.remove('active');
-            mobileMenuBtn.classList.remove('active');
+    if (mobileMenuBtn && mainNav) {
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenuBtn.classList.toggle('active');
+            mainNav.classList.toggle('active');
         });
-    });
 
-    // 2. Sticky Header on Scroll
-    const header = document.querySelector('.header');
+        // Close menu when clicking any nav link
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenuBtn.classList.remove('active');
+                mainNav.classList.remove('active');
+            });
+        });
+    }
 
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-            header.classList.add('scrolled');
-        } else {
-            header.classList.remove('scrolled');
-        }
-    });
-
-    // 3. Current Year in Footer
+    // 2. Footer Copyright Year Dynamic Update
     const yearSpan = document.getElementById('year');
     if (yearSpan) {
         yearSpan.textContent = new Date().getFullYear();
     }
 
-    // 4. Scroll Reveal Animations (Intersection Observer)
+    // 3. Intersection Observer Scroll Reveals
     const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
-
     const revealOptions = {
-        threshold: 0.15,
-        rootMargin: "0px 0px -50px 0px"
+        threshold: 0.12,
+        rootMargin: "0px 0px -40px 0px"
     };
 
     const revealObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 entry.target.classList.add('active');
-                // Optional: Stop observing once revealed
-                // observer.unobserve(entry.target);
+                observer.unobserve(entry.target);
             }
         });
     }, revealOptions);
@@ -57,19 +46,130 @@ document.addEventListener('DOMContentLoaded', () => {
         revealObserver.observe(el);
     });
 
-    // 5. Form Submission Handling (FormSubmit AJAX)
+    // 4. Project Portfolio Category Filtering
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const galleryCards = document.querySelectorAll('.gallery-card');
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const filterValue = btn.getAttribute('data-filter');
+
+            galleryCards.forEach(card => {
+                const category = card.getAttribute('data-category');
+                if (filterValue === 'all' || category === filterValue) {
+                    card.style.display = 'flex';
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+        });
+    });
+
+    // 5. Project Lightbox Modal Handler
+    const projectModal = document.getElementById('projectModal');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalImg = document.getElementById('modalImg');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalTag = document.getElementById('modalTag');
+    const modalDesc = document.getElementById('modalDesc');
+
+    if (projectModal && galleryCards.length > 0) {
+        galleryCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.getAttribute('data-title') || '';
+                const desc = card.getAttribute('data-desc') || '';
+                const img = card.getAttribute('data-img') || '';
+                const category = card.querySelector('.gallery-tag')?.textContent || 'Project';
+
+                modalImg.src = img;
+                modalImg.alt = title;
+                modalTitle.textContent = title;
+                modalTag.textContent = category;
+                modalDesc.textContent = desc;
+
+                projectModal.classList.add('active');
+                projectModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+
+        const closeModal = () => {
+            projectModal.classList.remove('active');
+            projectModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        };
+
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', closeModal);
+        }
+
+        projectModal.addEventListener('click', (e) => {
+            if (e.target === projectModal) {
+                closeModal();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && projectModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+    }
+
+    // 6. Robust Video Component Player Handler
+    const playVideoBtn = document.getElementById('playVideoBtn');
+    const siteVideo = document.getElementById('siteVideo');
+    const videoOverlay = document.getElementById('videoOverlay');
+
+    if (playVideoBtn && siteVideo && videoOverlay) {
+        playVideoBtn.addEventListener('click', () => {
+            videoOverlay.classList.add('hidden');
+            siteVideo.play().catch(err => {
+                console.log('Video play error or missing MP4 source:', err);
+                // Graceful fallback to poster overlay
+                videoOverlay.classList.remove('hidden');
+            });
+        });
+
+        siteVideo.addEventListener('play', () => {
+            videoOverlay.classList.add('hidden');
+        });
+
+        siteVideo.addEventListener('pause', () => {
+            if (siteVideo.currentTime === 0 || siteVideo.ended) {
+                videoOverlay.classList.remove('hidden');
+            }
+        });
+
+        siteVideo.addEventListener('ended', () => {
+            videoOverlay.classList.remove('hidden');
+        });
+    }
+
+    // 7. FormSubmit Lead Form Submission Handler (AJAX)
     const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
+    const submitBtn = document.getElementById('submitBtn');
+
+    if (contactForm && submitBtn) {
         contactForm.addEventListener('submit', function (e) {
             e.preventDefault();
 
-            // Get button to show loading state
-            const btn = contactForm.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
+            const originalBtnText = submitBtn.textContent;
 
-            btn.textContent = 'Sending...';
-            btn.style.opacity = '0.8';
-            btn.disabled = true;
+            submitBtn.textContent = 'Sending Quote Request...';
+            submitBtn.style.opacity = '0.85';
+            submitBtn.disabled = true;
 
             const formData = new FormData(this);
             const data = Object.fromEntries(formData.entries());
@@ -82,46 +182,46 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify(data)
             })
-                .then(response => response.json())
-                .then(data => {
-                    // Check for both string "true" and boolean true
-                    if (data.success === "true" || data.success === true) {
-                        btn.textContent = 'Quote Request Sent!';
-                        btn.style.backgroundColor = '#25D366'; // WhatsApp green for success
-                        btn.style.color = '#fff';
-                        contactForm.reset();
-                    } else {
-                        console.error('Submission failed:', data);
-                        btn.textContent = 'Action Required: Check Email';
-                        btn.style.backgroundColor = '#ff4b2b';
-                        const originalBtnText = originalText;
-                        // Provide more context if it's an activation issue
-                        if (data.message && data.message.includes('activate')) {
-                            alert("Please check your email and click the 'Activate Form' button from FormSubmit to enable the form!");
-                        }
+            .then(response => response.json())
+            .then(res => {
+                if (res.success === "true" || res.success === true) {
+                    submitBtn.textContent = 'Quote Request Sent Successfully!';
+                    submitBtn.style.backgroundColor = '#25D366';
+                    submitBtn.style.borderColor = '#25D366';
+                    submitBtn.style.color = '#FFFFFF';
+                    contactForm.reset();
+                } else {
+                    console.error('Submission returned status:', res);
+                    submitBtn.textContent = 'Activation Required: Check Email';
+                    submitBtn.style.backgroundColor = '#DC2626';
+                    submitBtn.style.borderColor = '#DC2626';
+
+                    if (res.message && res.message.includes('activate')) {
+                        alert("Please check your email and click 'Activate Form' from FormSubmit to enable submissions.");
                     }
+                }
 
-                    // Revert button back after 6 seconds
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.backgroundColor = '';
-                        btn.style.color = '';
-                        btn.style.opacity = '1';
-                        btn.disabled = false;
-                    }, 6000);
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    btn.textContent = 'Submission Failed';
-                    btn.style.backgroundColor = '#ff4b2b';
+                setTimeout(() => {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.style.backgroundColor = '';
+                    submitBtn.style.borderColor = '';
+                    submitBtn.style.color = '';
+                    submitBtn.style.opacity = '1';
+                    submitBtn.disabled = false;
+                }, 6000);
+            })
+            .catch(err => {
+                console.error('Form submission error:', err);
+                submitBtn.textContent = 'Submission Failed. Try Again';
+                submitBtn.style.backgroundColor = '#DC2626';
 
-                    setTimeout(() => {
-                        btn.textContent = originalText;
-                        btn.style.backgroundColor = '';
-                        btn.style.opacity = '1';
-                        btn.disabled = false;
-                    }, 5000);
-                });
+                setTimeout(() => {
+                    submitBtn.textContent = originalBtnText;
+                    submitBtn.style.backgroundColor = '';
+                    submitBtn.style.opacity = '1';
+                    submitBtn.disabled = false;
+                }, 5000);
+            });
         });
     }
 
